@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-req v1.1.4
+req v1.1.8
 Copyright © 2016 Eugene Y. Q. Shen.
 
 req is free software: you can redistribute it and/or
@@ -44,11 +44,18 @@ class Main(ttk.Frame):
         self.pack(fill=tk.BOTH)
         self.courses = {}
         self.widgets = {}
+        self.side = ttk.Frame(self)
+        self.side.pack(side=tk.RIGHT, fill=tk.Y)
+        self.sidetitle = ttk.Label(self.side, text='Course Information',
+            font='Verdana 10 bold', anchor=tk.CENTER, width=50)
+        self.sidetitle.pack()   # Stops sidebar from destroying itself
+        self.sidebar = ttk.Frame(self.side)
+        self.sidebar.pack(fill=tk.X)
 
         # Read in all course codes in tabs and create them
         notebook = ttk.Notebook(self)
         notebook.bind_all("<<NotebookTabChanged>>", self.update_all)
-        notebook.pack(fill=tk.BOTH)
+        notebook.pack(side=tk.RIGHT, fill=tk.Y)
         tabs = {}       # Dictionary of courses to put in each tab
         tabsttk = {}    # Dictionary of ttk Frames for each tab
         tabsall = []    # List of all courses to put in each tab
@@ -142,6 +149,8 @@ class Main(ttk.Frame):
                 label = tk.Button(frame, text=code,
                                   command=lambda c=code: self.set_done(c))
                 label.grid(row=row, column=col)
+                label.bind("<Enter>", lambda e, c=code: self.set_sidebar(c))
+                label.bind("<Leave>", lambda e: self.set_sidebar())
                 self.widgets[code].append(label)
                 self.update_course(code)
                 col += 1
@@ -229,6 +238,30 @@ class Main(ttk.Frame):
             elif 'outs' in done:
                 return 'outs'
             return 'none'
+
+
+    # Change sidebar contents on mouse hover
+    def set_sidebar(self, code=None):
+        for label in self.sidebar.winfo_children():
+            label.destroy()
+        if code:
+            params = self.courses[code].get_params()
+            titles = ['code:', 'name:', 'credits:', 'terms:',
+                      'prerequisites:', 'corequisites:',
+                      'excluded courses:', 'description:']
+            values = [params['code'], params['name'],
+                      ','.join([str(c) for c in params['cred']]),
+                      ','.join(params['term']),
+                      str(params['preq']), str(params['creq']),
+                      ','.join(params['excl']), '']
+            for i in range(len(titles)):
+                if not values[i]:
+                    continue
+                title = ttk.Label(self.sidebar, text=titles[i],
+                                  foreground='firebrick')
+                title.grid(row=i, column=0, sticky=tk.W, padx=10)
+                text = ttk.Label(self.sidebar, text=values[i], wraplength=300)
+                text.grid(row=i, column=1, sticky=tk.W)
 
 
 
